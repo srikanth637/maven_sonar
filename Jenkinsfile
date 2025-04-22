@@ -1,23 +1,37 @@
 pipeline {
     agent any
-    environment {
-        PATH = "/opt/maven/bin:${PATH}"
+    tools {
+        maven 'maven'
     }
-    stages{
-    stage("collect code from git"){
-            steps{
-            git credentialsId: 'git_credentials', url:'https://github.com/srikanth637/maven_sonar.git'
-           }
-        }    
-        stage("build code"){
-            steps{
-            sh "mvn install" 
+    
+    stages {
+        stage('Checkout Code') {
+            steps {
+                git 'https://github.com/srikanth637/maven_sonar.git' // Use your Git repository URL
             }
         }
-        stage("unit test") {
-            steps{
-                sh "mvn test"
+        
+        stage('Build') {
+            steps {
+                sh 'mvn compile'
             }
         }
+        
+        stage('Test') {
+            steps {
+                sh 'mvn test'
+            }
+        }
+        
+        stage('SonarQube Analysis') {
+            environment {
+                SONAR_HOST_URL = 'http://54.152.124.11:9000/' // Replace with your SonarQube URL
+                SONAR_AUTH_TOKEN = credentials('sonarqube-server') // Store your token in Jenkins credentials
+            }
+            steps {
+                sh 'mvn sonar:sonar -Dsonar.projectKey=sample_project -Dsonar.host.url=$SONAR_HOST_URL -Dsonar.login=$SONAR_AUTH_TOKEN'
+            }
+        }
+        
     }
 }
